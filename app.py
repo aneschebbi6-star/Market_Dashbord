@@ -25,12 +25,12 @@ def main():
             return
 
         # View: Rendering
-        search_ticker, show_ma50, show_ma200 = render_sidebar()
+        search_ticker, compare_ticker, show_ma50, show_ma200 = render_sidebar()
         
         st.title("🚀 Market Dashboard Pro")
         render_metrics(data)
         st.divider()
-        render_chart(search_ticker, show_ma50, show_ma200)
+        render_chart(search_ticker, compare_ticker, show_ma50, show_ma200)
         render_footer_table(data)
     except Exception as e:
         st.error(f"Une erreur interne est survenue : {e}")

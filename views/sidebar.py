@@ -8,6 +8,7 @@ def render_sidebar():
         st.divider()
         st.subheader("🔍 Analyse Ticker")
         ticker = st.text_input("Ticker", value="BTC", placeholder="ex: DOGE, ADA").upper()
+        compare_ticker = st.text_input("Comparer avec (Optionnel)", value="", placeholder="ex: ETH, SOL").upper()
         st.divider()
         st.subheader("Outils Graphiques")
         ma50 = st.checkbox("Moyenne Mobile 50", value=True)
@@ -19,4 +20,4 @@ def render_sidebar():
             st.session_state["password_correct"] = False
             st.rerun()
         st.caption(f"Status : Connecté | {time.strftime('%H:%M:%S')}")
-        return ticker, ma50, ma200
+        return ticker, compare_ticker, ma50, ma200
