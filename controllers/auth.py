@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import streamlit as st
 from streamlit.runtime.secrets import StreamlitSecretNotFoundError
@@ -6,15 +7,25 @@ from views.login import render_login_page
 
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    project_root = Path(__file__).resolve().parent.parent
+    dotenv_path = project_root / ".env"
+    if dotenv_path.exists():
+        load_dotenv(dotenv_path=dotenv_path)
+    else:
+        load_dotenv()
 except ImportError:
-    load_dotenv = None
+    pass
 
 
 def load_auth_credentials():
     """Load login credentials from environment variables or Streamlit secrets."""
-    username = os.getenv("DASHBOARD_USER")
-    password = os.getenv("DASHBOARD_PASSWORD")
+    username = os.getenv("DASHBOARD_USER") or os.getenv("dashboard_user")
+    password = os.getenv("DASHBOARD_PASSWORD") or os.getenv("dashboard_password")
+
+    if username:
+        username = username.strip()
+    if password:
+        password = password.strip()
 
     if not username or not password:
         try:
