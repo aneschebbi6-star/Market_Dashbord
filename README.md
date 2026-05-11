@@ -97,10 +97,38 @@ Ce projet est pré-configuré pour tourner dans un conteneur Docker isolé.
 2. Ouvrez la palette de commandes (`F1`) et choisissez **"Dev Containers: Reopen in Container"**.
 3. L'environnement Python s'installe tout seul et l'app s'ouvre sur le port `8501`.
 
-### 🔐 Identifiants par défaut
+### 🔐 Authentification sécurisée
 
-- **Utilisateur** : `Anes0123`
-- **Mot de passe** : `chebbi@1`
+Ce projet utilise des identifiants configurables via :
+
+- variables d'environnement : `DASHBOARD_USER` et `DASHBOARD_PASSWORD`
+- ou fichier local `.env`
+- ou Streamlit secrets : `.streamlit/secrets.toml`
+
+> Ne pas laisser d'identifiants en clair dans le code source.
+
+Exemple de configuration en `.env` :
+
+```env
+DASHBOARD_USER=trade_admin
+DASHBOARD_PASSWORD=ProDash@2026
+```
+
+---
+
+### 📰 Flux d'Actualités en Temps Réel (Optionnel)
+
+Pour activer les actualités crypto en **temps réel** via NewsAPI :
+
+1. Créez un compte gratuit sur [newsapi.org](https://newsapi.org/) (100 requêtes/jour)
+2. Récupérez votre clé API
+3. Ajoutez-la dans `.env` :
+
+```env
+NEWSAPI_KEY=votre_clé_api_ici
+```
+
+> **Sans clé API** : le système affichera des actualités de démonstration réalistes.
 
 ---
 

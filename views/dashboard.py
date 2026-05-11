@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from fetcher import get_history
+from fetcher import get_history, get_news, analyze_sentiment
 
 def render_metrics(data):
     """Render the top metric cards."""
@@ -114,3 +114,117 @@ def render_footer_table(data):
     with st.expander("🔍 Voir le Détail du Marché"):
         table_data = [{"ACTIF": k.upper(), "VALEUR ($)": f"{v['usd']:,.2f}", "CHANGE 24H": f"{v['usd_24h_change']:.2f}%"} for k, v in data.items()]
         st.table(pd.DataFrame(table_data))
+
+
+def render_sentiment_gauge(ticker):
+    """Render sentiment analysis gauge for a cryptocurrency.
+    
+    Args:
+        ticker: Crypto ticker symbol (e.g., 'BTC', 'ETH')
+    """
+    st.subheader("🎯 Analyse de Sentiment (Actualités)")
+    
+    with st.spinner(f"Chargement des actualités pour {ticker}..."):
+        # Fetch news
+        crypto_mapping = {
+            "BTC": "bitcoin",
+            "ETH": "ethereum",
+            "SOL": "solana",
+            "BNB": "binancecoin",
+            "XRP": "ripple",
+            "ADA": "cardano",
+            "DOGE": "dogecoin"
+        }
+        
+        crypto_name = crypto_mapping.get(ticker.upper(), ticker.lower())
+        news = get_news(crypto_name, limit=10)
+        
+        if not news or len(news) == 0:
+            st.info(f"⏳ Aucune actualité disponible pour {ticker} en ce moment.")
+            return
+        
+        sentiment_result = analyze_sentiment(news)
+        
+        # Display gauge
+        gauge_col, info_col = st.columns([2, 1])
+        
+        with gauge_col:
+            # Create gauge figure
+            sentiment_score = sentiment_result['score']
+            sentiment_label = sentiment_result['label']
+            
+            # Color based on sentiment
+            if sentiment_label == 'Bullish':
+                gauge_color = '#22c55e'
+            elif sentiment_label == 'Bearish':
+                gauge_color = '#ef4444'
+            else:
+                gauge_color = '#94a3b8'
+            
+            fig_gauge = go.Figure(go.Indicator(
+                mode="gauge+number+delta",
+                value=sentiment_score * 100,  # Scale to -100 to 100
+                domain={'x': [0, 1], 'y': [0, 1]},
+                title={'text': f"Sentiment Score"},
+                delta={'reference': 0, 'suffix': " pts"},
+                gauge={
+                    'axis': {'range': [-100, 100]},
+                    'bar': {'color': gauge_color},
+                    'steps': [
+                        {'range': [-100, -33], 'color': 'rgba(239, 68, 68, 0.2)'},
+                        {'range': [-33, 33], 'color': 'rgba(148, 163, 184, 0.2)'},
+                        {'range': [33, 100], 'color': 'rgba(34, 197, 94, 0.2)'}
+                    ],
+                    'threshold': {
+                        'line': {'color': 'white', 'width': 2},
+                        'thickness': 0.75,
+                        'value': 0
+                    }
+                }
+            ))
+            
+            fig_gauge.update_layout(
+                height=350,
+                paper_bgcolor='rgba(0,0,0,0)',
+                plot_bgcolor='rgba(0,0,0,0)',
+                margin=dict(l=0, r=0, t=30, b=0)
+            )
+            
+            st.plotly_chart(fig_gauge, use_container_width=True)
+        
+        with info_col:
+            st.metric("Sentiment Global", sentiment_label, f"{sentiment_score:.3f}")
+        
+        # Display top 3 impactful news
+        st.divider()
+        st.subheader("📰 Actualités Principales")
+        
+        # Sort by absolute sentiment score to get most impactful
+        sorted_articles = sorted(
+            sentiment_result['articles'],
+            key=lambda x: abs(x['sentiment_score']),
+            reverse=True
+        )[:3]
+        
+        for idx, article in enumerate(sorted_articles, 1):
+            with st.container():
+                col1, col2 = st.columns([3, 1], gap="large")
+                
+                with col1:
+                    sentiment_emoji = "📈" if article['sentiment_label'] == 'Bullish' else "📉" if article['sentiment_label'] == 'Bearish' else "➡️"
+                    
+                    st.markdown(
+                        f"**{idx}. {sentiment_emoji} {article['title'][:80]}...**"
+                        if len(article['title']) > 80
+                        else f"**{idx}. {sentiment_emoji} {article['title']}**"
+                    )
+                    
+                    st.caption(f"Source: {article['source']} • Score: {article['sentiment_score']:.2f}")
+                    
+                    if article.get('url'):
+                        st.markdown(f"[Lire l'article →]({article['url']})", unsafe_allow_html=True)
+                
+                with col2:
+                    st.markdown(f"<div style='text-align: center; padding: 10px; background: rgba({128 if article['color'] == 'green' else 239 if article['color'] == 'red' else 148}, {197 if article['color'] == 'green' else 68 if article['color'] == 'red' else 163}, {94 if article['color'] == 'green' else 68 if article['color'] == 'red' else 184}, 0.1); border-radius: 8px;'><strong>{article['sentiment_label']}</strong></div>", unsafe_allow_html=True)
+                
+            st.divider()

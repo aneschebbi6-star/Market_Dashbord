@@ -114,10 +114,16 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.envrc
+.venv/
 env/
 venv/
 ENV/
 env.bak/
+
+# Streamlit secrets
+.streamlit/secrets.toml
+
 venv.bak/
 venv64/
 

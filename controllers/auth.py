@@ -1,5 +1,31 @@
+import os
+
 import streamlit as st
+from streamlit.runtime.secrets import StreamlitSecretNotFoundError
 from views.login import render_login_page
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    load_dotenv = None
+
+
+def load_auth_credentials():
+    """Load login credentials from environment variables or Streamlit secrets."""
+    username = os.getenv("DASHBOARD_USER")
+    password = os.getenv("DASHBOARD_PASSWORD")
+
+    if not username or not password:
+        try:
+            username = st.secrets.get("user")
+            password = st.secrets.get("password")
+        except StreamlitSecretNotFoundError:
+            username = username or None
+            password = password or None
+
+    return username, password
+
 
 def check_password():
     """Returns `True` if the user had a correct password."""
@@ -12,11 +38,18 @@ def check_password():
     submitted, user, pwd = render_login_page()
     
     if submitted:
-        if user == "Anes0123" and pwd == "chebbi@1":
+        expected_user, expected_pwd = load_auth_credentials()
+
+        if not expected_user or not expected_pwd:
+            st.error(
+                "⛔ Aucun identifiant configuré. Définissez `DASHBOARD_USER`/`DASHBOARD_PASSWORD` ou utilisez `st.secrets`."
+            )
+            return False
+
+        if user == expected_user and pwd == expected_pwd:
             st.session_state["password_correct"] = True
             st.rerun()
         else:
-            # Re-render the error message from the view component
             st.error("⛔ Accès refusé — Identifiants invalides")
 
     return False
