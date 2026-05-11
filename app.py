@@ -1,6 +1,5 @@
 import streamlit as st
 from styles.theme import inject_global_styles
-from controllers.auth import check_password
 from views.sidebar import render_sidebar
 from views.dashboard import render_metrics, render_chart, render_footer_table, render_sentiment_gauge
 from fetcher import get_prices
@@ -12,9 +11,6 @@ def setup_page():
 def main():
     try:
         setup_page()
-        
-        if not check_password():
-            st.stop()
 
         # Controller: Data Fetching
         top_symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD"]

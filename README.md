@@ -15,8 +15,7 @@
 
 ## ✨ Points Forts
 
-- **🔐 Authentification de Grade Terminal** : Interface de connexion sécurisée avec un design _glassmorphism_ et arrière-plans animés.
-- **📊 Analyse Technique Avancée** : Graphiques en chandeliers (Candlesticks) interactifs propulsés par Plotly, incluant des indicateurs comme MA50 et MA200.
+- ** Analyse Technique Avancée** : Graphiques en chandeliers (Candlesticks) interactifs propulsés par Plotly, incluant des indicateurs comme MA50 et MA200.
 - **⚡ Flux de Données Ultra-Rapide** : Intégration en temps réel pour BTC, ETH, SOL, et plus via yfinance et CoinGecko.
 - **🔍 Recherche Dynamique** : Analysez instantanément n'importe quel ticker disponible sur le marché mondial.
 - **🎨 UI/UX Premium** : Design moderne, sombre, avec des effets de flou cinétique et des micro-animations.
@@ -26,18 +25,7 @@
 ## 📸 Aperçu de l'Interface
 
 <div align="center">
-  <table>
-    <tr>
-      <td width="50%">
-        <p align="center"><b>🔐 Connexion Sécurisée</b></p>
-        <img src="assets/screenshots/login.png" alt="Login Interface" width="100%">
-      </td>
-      <td width="50%">
-        <p align="center"><b>📊 Dashboard Principal</b></p>
-        <img src="assets/screenshots/dashboard.png" alt="Main Dashboard" width="100%">
-      </td>
-    </tr>
-  </table>
+  <img src="assets/screenshots/dashboard.png" alt="Main Dashboard" width="65%">
 </div>
 
 > [!TIP]
@@ -97,23 +85,6 @@ Ce projet est pré-configuré pour tourner dans un conteneur Docker isolé.
 2. Ouvrez la palette de commandes (`F1`) et choisissez **"Dev Containers: Reopen in Container"**.
 3. L'environnement Python s'installe tout seul et l'app s'ouvre sur le port `8501`.
 
-### 🔐 Authentification sécurisée
-
-Ce projet utilise des identifiants configurables via :
-
-- variables d'environnement : `DASHBOARD_USER` et `DASHBOARD_PASSWORD`
-- ou fichier local `.env`
-- ou Streamlit secrets : `.streamlit/secrets.toml`
-
-> Ne pas laisser d'identifiants en clair dans le code source.
-
-Exemple de configuration en `.env` :
-
-```env
-DASHBOARD_USER=trade_admin
-DASHBOARD_PASSWORD=ProDash@2026
-```
-
 ---
 
 ### 📰 Flux d'Actualités en Temps Réel (Optionnel)
@@ -149,10 +120,7 @@ Le projet a été refactorisé pour garantir un code modulaire et professionnel 
 Market_Dashbord/
 ├── app.py              # Point d'entrée principal (Orchestrateur)
 ├── fetcher.py          # ⚙️ Modèle : API et traitement des données
-├── controllers/        # 🎮 Contrôleurs : Logique métier
-│   └── auth.py         # Authentification sécurisée
 ├── views/              # 👁️ Vues : Rendu de l'interface utilisateur
-│   ├── login.py        # Interface de connexion
 │   ├── dashboard.py    # Composants du tableau de bord
 │   └── sidebar.py      # Menu latéral de pilotage
 ├── styles/             # 🎨 Styles Globaux
