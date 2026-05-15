@@ -28,6 +28,28 @@
   <img src="assets/screenshots/dashboard.png" alt="Main Dashboard" width="65%">
 </div>
 
+## CHART
+<div align="center">
+  <img src="assets/screenshots/chart.png" alt="Main Dashboard" width="65%">
+</div>
+
+## COMPARAISON
+<div align="center">
+  <img src="assets/screenshots/compari.png" alt="Main Dashboard" width="65%">
+</div>
+
+## ANALYSE SENTIMENT
+<div align="center">
+  <img src="assets/screenshots/analyse_sentiment.png" alt="Main Dashboard" width="65%">
+</div>
+
+## DETAIL MARCHE
+<div align="center">
+  <img src="assets/screenshots/det_marche.png" alt="Main Dashboard" width="65%">
+</div>
+
+
+
 > [!TIP]
 > Pour une expérience optimale, utilisez le navigateur Chrome en mode plein écran.
 
@@ -95,9 +117,6 @@ Pour activer les actualités crypto en **temps réel** via NewsAPI :
 2. Récupérez votre clé API
 3. Ajoutez-la dans `.env` :
 
-```env
-NEWSAPI_KEY=votre_clé_api_ici
-```
 
 > **Sans clé API** : le système affichera des actualités de démonstration réalistes.
 
@@ -158,7 +177,7 @@ Les contributions font la force de la communauté open-source.
 **Anes Chebbi** - _Développeur Fullstack & Passionné de Finance_
 
 - GitHub : [@aneschebbi6-star](https://github.com/aneschebbi6-star)
-- LinkedIn : [Votre Profil](https://linkedin.com/in/votre-profil) (Optionnel)
+- LinkedIn : [Votre Profil](https://www.linkedin.com/in/anes-chebbi-9995b1316/) 
 
 ---
 
