@@ -21,7 +21,7 @@ except LookupError:
     nltk.download('vader_lexicon', quiet=True)
 
 
-def get_prices(symbols=["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD"]):
+def get_prices(symbols=["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "GC=F", "SI=F", "CL=F"]):
     data_output = {}
     
     for symbol in symbols:
@@ -30,7 +30,14 @@ def get_prices(symbols=["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "
             t = yf.Ticker(symbol)
             hist = t.history(period="2d")
             
-            name = symbol.replace("-USD", "").lower()
+            if symbol.upper() == "GC=F":
+                name = "gold"
+            elif symbol.upper() == "SI=F":
+                name = "silver"
+            elif symbol.upper() == "CL=F":
+                name = "oil"
+            else:
+                name = symbol.replace("-USD", "").lower()
             
             if not hist.empty and len(hist) >= 2:
                 current_price = hist['Close'].iloc[-1]
@@ -58,14 +65,23 @@ def get_history(ticker_or_name="bitcoin", days=7):
     mapping = {
         "bitcoin": "BTC-USD",
         "ethereum": "ETH-USD",
-        "solana": "SOL-USD"
+        "solana": "SOL-USD",
+        "gold": "GC=F",
+        "silver": "SI=F",
+        "oil": "CL=F",
+        "wti": "CL=F",
+        "crude oil": "CL=F",
+        "xau": "GC=F",
+        "xag": "SI=F"
     }
     
     ticker = mapping.get(ticker_or_name.lower(), ticker_or_name)
     
-    # S'assurer que le ticker finit par -USD s'il n'a pas de tiret
-    if "-" not in ticker:
+    # S'assurer que le ticker est bien formaté pour YahooFinance
+    if "-" not in ticker and "=" not in ticker:
         ticker = ticker.upper() + "-USD"
+    else:
+        ticker = ticker.upper()
     
     period = f"{days}d"
     
@@ -125,7 +141,10 @@ def get_news(crypto_name, limit=10):
             "ripple": "XRP Ripple",
             "cardano": "Cardano ADA",
             "dogecoin": "Dogecoin DOGE",
-            "binancecoin": "Binance BNB"
+            "binancecoin": "Binance BNB",
+            "gold": "Gold XAU",
+            "silver": "Silver XAG",
+            "oil": "Crude Oil WTI"
         }
         
         query = crypto_queries.get(crypto_name.lower(), crypto_name)

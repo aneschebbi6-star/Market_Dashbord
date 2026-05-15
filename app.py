@@ -13,7 +13,7 @@ def main():
         setup_page()
 
         # Controller: Data Fetching
-        top_symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD"]
+        top_symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "GC=F", "SI=F", "CL=F"]
         data = get_prices(top_symbols)
         
         if not data:

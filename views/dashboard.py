@@ -6,19 +6,25 @@ from fetcher import get_history, get_news, analyze_sentiment
 
 def render_metrics(data):
     """Render the top metric cards."""
-    m_col1, m_col2, m_col3 = st.columns(3)
+    metric_items = [
+        ("BITCOIN (BTC)", "btc"),
+        ("ETHEREUM (ETH)", "eth"),
+        ("SOLANA (SOL)", "sol"),
+        ("OR (GOLD)", "gold"),
+        ("ARGENT (SILVER)", "silver"),
+        ("PÉTROLE (OIL)", "oil")
+    ]
+
     def fmt(key):
         if key in data:
             return f"${data[key]['usd']:,.2f}", f"{data[key]['usd_24h_change']:.2f}%"
         return "$0.00", "0.00%"
-    
-    p1, c1 = fmt("btc")
-    p2, c2 = fmt("eth")
-    p3, c3 = fmt("sol")
-    
-    m_col1.metric("BITCOIN (BTC)", p1, c1)
-    m_col2.metric("ETHEREUM (ETH)", p2, c2)
-    m_col3.metric("SOLANA (SOL)", p3, c3)
+
+    for row_start in range(0, len(metric_items), 3):
+        cols = st.columns(3)
+        for col, (label, key) in zip(cols, metric_items[row_start:row_start + 3]):
+            price, change = fmt(key)
+            col.metric(label, price, change)
 
 def render_chart(ticker, compare_ticker, show_ma50, show_ma200):
     """Render the main trading chart."""
@@ -133,7 +139,13 @@ def render_sentiment_gauge(ticker):
             "BNB": "binancecoin",
             "XRP": "ripple",
             "ADA": "cardano",
-            "DOGE": "dogecoin"
+            "DOGE": "dogecoin",
+            "GOLD": "gold",
+            "GC=F": "gold",
+            "SILVER": "silver",
+            "SI=F": "silver",
+            "OIL": "oil",
+            "CL=F": "oil"
         }
         
         crypto_name = crypto_mapping.get(ticker.upper(), ticker.lower())
