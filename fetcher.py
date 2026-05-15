@@ -60,7 +60,17 @@ def get_prices(symbols=["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "
             
     return data_output
 
-def get_history(ticker_or_name="bitcoin", days=7):
+PERIOD_CONFIG = {
+    "1J": {"period": "1d",  "interval": "5m"},
+    "7J": {"period": "7d",  "interval": "1h"},
+    "1M": {"period": "1mo", "interval": "1d"},
+    "3M": {"period": "3mo", "interval": "1d"},
+    "1A": {"period": "1y",  "interval": "1d"},
+    "5A": {"period": "5y",  "interval": "1wk"},
+}
+
+
+def get_history(ticker_or_name="bitcoin", period_label="1M"):
     # Dictionnaire de secours pour les noms communs vers tickers
     mapping = {
         "bitcoin": "BTC-USD",
@@ -74,38 +84,59 @@ def get_history(ticker_or_name="bitcoin", days=7):
         "xau": "GC=F",
         "xag": "SI=F"
     }
-    
+
+    period_label_map = {
+        1: "1J",
+        7: "7J",
+        30: "1M",
+        90: "3M",
+        365: "1A",
+    }
+
+    # Support older numeric days values pour compatibilité
+    if isinstance(period_label, int):
+        period_label = period_label_map.get(period_label, "1M")
+    elif isinstance(period_label, str) and period_label.isdigit():
+        period_label = period_label_map.get(int(period_label), "1M")
+
     ticker = mapping.get(ticker_or_name.lower(), ticker_or_name)
-    
+
     # S'assurer que le ticker est bien formaté pour YahooFinance
     if "-" not in ticker and "=" not in ticker:
         ticker = ticker.upper() + "-USD"
     else:
         ticker = ticker.upper()
-    
-    period = f"{days}d"
-    
+
+    cfg = PERIOD_CONFIG.get(period_label, {"period": "1mo", "interval": "1d"})
+
     try:
         t = yf.Ticker(ticker)
-        hist = t.history(period=period)
+        hist = t.history(period=cfg["period"], interval=cfg["interval"])
         
+        if hist.empty:
+            return hist
+
+        hist = hist.dropna(how="all")
+
         # Calculer les indicateurs techniques
-        if not hist.empty and len(hist) > 14: # On s'assure d'avoir assez de données pour l'indicateur
-            # RSI (Relative Strength Index)
+        if len(hist) >= 14:
             hist['RSI'] = ta.momentum.RSIIndicator(hist['Close'], window=14).rsi()
             
-            # MACD
             macd = ta.trend.MACD(hist['Close'])
             hist['MACD'] = macd.macd()
             hist['MACD_Signal'] = macd.macd_signal()
             hist['MACD_Diff'] = macd.macd_diff()
-            
-            # Bandes de Bollinger
+            hist['MACD_Hist'] = hist['MACD'] - hist['MACD_Signal']
+
+        if len(hist) >= 20:
             bb = ta.volatility.BollingerBands(hist['Close'], window=20, window_dev=2)
             hist['BB_High'] = bb.bollinger_hband()
             hist['BB_Low'] = bb.bollinger_lband()
             hist['BB_Mid'] = bb.bollinger_mavg()
-            
+
+        hist['MA50'] = hist['Close'].rolling(window=50).mean()
+        hist['MA200'] = hist['Close'].rolling(window=200).mean()
+
         return hist
     except Exception as e:
         print(f"Erreur historique pour {ticker}: {e}")

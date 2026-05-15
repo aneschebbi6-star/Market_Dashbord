@@ -21,12 +21,12 @@ def main():
             return
 
         # View: Rendering
-        search_ticker, compare_ticker, show_ma50, show_ma200 = render_sidebar()
+        search_ticker, compare_ticker, show_ma50, show_ma200, chart_type = render_sidebar()
         
         st.title("🚀 Market Dashboard Pro")
         render_metrics(data)
         st.divider()
-        render_chart(search_ticker, compare_ticker, show_ma50, show_ma200)
+        render_chart(search_ticker, compare_ticker, show_ma50, show_ma200, chart_type)
         st.divider()
         render_sentiment_gauge(search_ticker)
         st.divider()

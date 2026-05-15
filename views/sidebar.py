@@ -13,6 +13,12 @@ def render_sidebar():
         st.subheader("Outils Graphiques")
         ma50 = st.checkbox("Moyenne Mobile 50", value=True)
         ma200 = st.checkbox("Moyenne Mobile 200", value=False)
+        chart_type = st.radio(
+            "Type de graphique",
+            options=["Candlestick", "Line", "Area"],
+            index=0,
+            horizontal=True,
+        )
         st.divider()
         if st.button("🔄 Actualiser Flux", use_container_width=True):
             st.rerun()
@@ -20,4 +26,4 @@ def render_sidebar():
             st.session_state["password_correct"] = False
             st.rerun()
         st.caption(f"Status : Connecté | {time.strftime('%H:%M:%S')}")
-        return ticker, compare_ticker, ma50, ma200
+        return ticker, compare_ticker, ma50, ma200, chart_type

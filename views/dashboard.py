@@ -26,11 +26,323 @@ def render_metrics(data):
             price, change = fmt(key)
             col.metric(label, price, change)
 
-def render_chart(ticker, compare_ticker, show_ma50, show_ma200):
+def build_chart(
+    hist,
+    show_ma50=False,
+    show_ma200=False,
+    show_rsi=False,
+    show_macd=False,
+    show_bb=False,
+    chart_type="Candlestick",
+):
+    if hist.empty:
+        return go.Figure().update_layout(
+            template="plotly_dark",
+            title="Aucune donnée disponible",
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(l=30, r=20, t=40, b=20),
+        )
+
+    rows = 2
+    row_heights = [0.55, 0.15]
+    subplot_titles = ["Prix", "Volume"]
+
+    has_rsi = show_rsi and "RSI" in hist.columns
+    has_macd = show_macd and "MACD" in hist.columns
+
+    if has_rsi:
+        rows += 1
+        row_heights.append(0.15)
+        subplot_titles.append("RSI")
+    if has_macd:
+        rows += 1
+        row_heights.append(0.15)
+        subplot_titles.append("MACD")
+
+    fig = make_subplots(
+        rows=rows,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.04,
+        row_heights=row_heights,
+        subplot_titles=subplot_titles,
+    )
+
+    if chart_type == "Candlestick":
+        fig.add_trace(
+            go.Candlestick(
+                x=hist.index,
+                open=hist["Open"],
+                high=hist["High"],
+                low=hist["Low"],
+                close=hist["Close"],
+                name="Prix",
+                increasing_line_color="#22c55e",
+                decreasing_line_color="#ef4444",
+            ),
+            row=1,
+            col=1,
+        )
+    elif chart_type == "Line":
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["Close"],
+                mode="lines",
+                name="Clôture",
+                line=dict(color="#2196f3", width=2),
+            ),
+            row=1,
+            col=1,
+        )
+    else:
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["Close"],
+                mode="lines",
+                name="Clôture",
+                line=dict(color="#2196f3", width=2),
+                fill="tozeroy",
+                fillcolor="rgba(33, 150, 243, 0.15)",
+            ),
+            row=1,
+            col=1,
+        )
+
+    if show_bb and "BB_High" in hist.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["BB_High"],
+                mode="lines",
+                name="BB Haut",
+                line=dict(color="#ff9800", dash="dot", width=1),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["BB_Mid"],
+                mode="lines",
+                name="BB Moy",
+                line=dict(color="#ffb74d", dash="dash", width=1),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["BB_Low"],
+                mode="lines",
+                name="BB Bas",
+                line=dict(color="#ff9800", dash="dot", width=1),
+                fill="tonexty",
+                fillcolor="rgba(255, 152, 0, 0.08)",
+            ),
+            row=1,
+            col=1,
+        )
+
+    if show_ma50 and "MA50" in hist.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["MA50"],
+                name="MA 50",
+                line=dict(color="#fbbf24", width=2),
+            ),
+            row=1,
+            col=1,
+        )
+    if show_ma200 and "MA200" in hist.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["MA200"],
+                name="MA 200",
+                line=dict(color="#f87171", width=2),
+            ),
+            row=1,
+            col=1,
+        )
+
+    volume_colors = [
+        "#22c55e" if c >= o else "#ef4444"
+        for c, o in zip(hist["Close"], hist["Open"])
+    ]
+    fig.add_trace(
+        go.Bar(
+            x=hist.index,
+            y=hist["Volume"],
+            name="Volume",
+            marker_color=volume_colors,
+            opacity=0.65,
+        ),
+        row=2,
+        col=1,
+    )
+
+    current_row = 3
+    if has_rsi:
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["RSI"],
+                mode="lines",
+                name="RSI",
+                line=dict(color="#9c27b0", width=2),
+            ),
+            row=current_row,
+            col=1,
+        )
+        fig.add_hline(y=70, line_dash="dot", line_color="#ef5350", row=current_row, col=1)
+        fig.add_hline(y=30, line_dash="dot", line_color="#22c55e", row=current_row, col=1)
+        fig.update_yaxes(range=[0, 100], row=current_row, col=1)
+        current_row += 1
+
+    if has_macd:
+        if "MACD_Hist" not in hist.columns and "MACD" in hist.columns and "MACD_Signal" in hist.columns:
+            hist["MACD_Hist"] = hist["MACD"] - hist["MACD_Signal"]
+
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["MACD"],
+                mode="lines",
+                name="MACD",
+                line=dict(color="#00bcd4", width=2),
+            ),
+            row=current_row,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=hist.index,
+                y=hist["MACD_Signal"],
+                mode="lines",
+                name="Signal MACD",
+                line=dict(color="#ff5722", width=1.5, dash="dash"),
+            ),
+            row=current_row,
+            col=1,
+        )
+        fig.add_trace(
+            go.Bar(
+                x=hist.index,
+                y=hist["MACD_Hist"],
+                name="Histogramme MACD",
+                marker_color=["#22c55e" if v >= 0 else "#ef4444" for v in hist["MACD_Hist"]],
+                opacity=0.6,
+            ),
+            row=current_row,
+            col=1,
+        )
+
+    fig.update_layout(
+        template="plotly_dark",
+        height=200 + 120 * rows,
+        margin=dict(l=40, r=20, t=40, b=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        hovermode="x unified",
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.08)")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.08)")
+    return fig
+
+
+def build_comparison_chart(main_ticker, compare_ticker, period_label):
+    hist_main = get_history(main_ticker, period_label)
+    hist_compare = get_history(compare_ticker, period_label)
+
+    if hist_main.empty or hist_compare.empty:
+        return None
+
+    main_data, compare_data = (
+        hist_main[["Close", "Volume"]].align(
+            hist_compare[["Close", "Volume"]], join="inner"
+        )
+    )
+
+    if main_data.empty or compare_data.empty:
+        return None
+
+    perf_main = (main_data["Close"] / main_data["Close"].iloc[0] - 1) * 100
+    perf_compare = (compare_data["Close"] / compare_data["Close"].iloc[0] - 1) * 100
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.05,
+        row_heights=[0.65, 0.25],
+        subplot_titles=["Performance (%)", "Volume"],
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=perf_main.index,
+            y=perf_main,
+            name=main_ticker,
+            line=dict(color="#fbbf24", width=2),
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=perf_compare.index,
+            y=perf_compare,
+            name=compare_ticker,
+            line=dict(color="#3b82f6", width=2),
+        ),
+        row=1,
+        col=1,
+    )
+    fig.add_hline(y=0, line_dash="dot", line_color="gray", row=1, col=1)
+
+    fig.add_trace(
+        go.Bar(
+            x=main_data.index,
+            y=main_data["Volume"],
+            name=f"Volume {main_ticker}",
+            marker_color="rgba(251, 189, 36, 0.5)",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Bar(
+            x=compare_data.index,
+            y=compare_data["Volume"],
+            name=f"Volume {compare_ticker}",
+            marker_color="rgba(59, 130, 246, 0.5)",
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig.update_layout(
+        template="plotly_dark",
+        height=520,
+        margin=dict(l=40, r=20, t=40, b=20),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        hovermode="x unified",
+    )
+    fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.08)")
+    fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.08)")
+    return fig
+
+
+def render_chart(ticker, compare_ticker, show_ma50, show_ma200, chart_type):
     """Render the main trading chart."""
     st.subheader(f"📊 Analyse Technique : {ticker}")
-    p_map = {"1J": 1, "7J": 7, "1M": 30, "1A": 365}
-    
+    p_map = {"1J": "1J", "7J": "7J", "1M": "1M", "1A": "1A"}
+
     col1, col2 = st.columns([1, 2])
     with col1:
         sel_p = st.radio("Sélecteur de Temps", options=list(p_map.keys()), index=1, horizontal=True)
@@ -38,80 +350,34 @@ def render_chart(ticker, compare_ticker, show_ma50, show_ma200):
         selected_indicators = st.multiselect(
             "Indicateurs Techniques",
             options=["RSI", "MACD", "Bandes de Bollinger"],
-            default=[]
+            default=[],
         )
-        
-    df_hist = get_history(ticker, days=p_map[sel_p])
+
+    df_hist = get_history(ticker, period_label=sel_p)
+
+    if sel_p == "1J":
+        st.info("⚠️ Mode intraday (5 min) — les bougies peuvent être incomplètes en dehors des heures de marché.")
 
     if not df_hist.empty:
-        df_hist['MA50'] = df_hist['Close'].rolling(window=50).mean()
-        df_hist['MA200'] = df_hist['Close'].rolling(window=200).mean()
-        
-        # Création de la figure avec un axe Y secondaire pour les oscillateurs (RSI/MACD)
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
-        
-        # Candlestick principal
-        fig.add_trace(go.Candlestick(x=df_hist.index, open=df_hist['Open'], high=df_hist['High'], low=df_hist['Low'], close=df_hist['Close'], name='Prix'), secondary_y=False)
-        
-        # Moyennes mobiles
-        if show_ma50: fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['MA50'], line=dict(color='#fbbf24', width=2), name='MA 50'), secondary_y=False)
-        if show_ma200: fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['MA200'], line=dict(color='#f87171', width=2), name='MA 200'), secondary_y=False)
-        
-        # Bandes de Bollinger
-        if "Bandes de Bollinger" in selected_indicators and 'BB_High' in df_hist.columns:
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['BB_High'], line=dict(color='rgba(255, 255, 255, 0.3)', width=1, dash='dash'), name='BB High'), secondary_y=False)
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['BB_Low'], line=dict(color='rgba(255, 255, 255, 0.3)', width=1, dash='dash'), name='BB Low', fill='tonexty', fillcolor='rgba(255, 255, 255, 0.05)'), secondary_y=False)
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['BB_Mid'], line=dict(color='rgba(255, 255, 255, 0.5)', width=1), name='BB Mid'), secondary_y=False)
-
-        # Oscillateurs (RSI et MACD) sur l'axe Y secondaire
-        if "RSI" in selected_indicators and 'RSI' in df_hist.columns:
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['RSI'], line=dict(color='#a855f7', width=2), name='RSI'), secondary_y=True)
-
-        if "MACD" in selected_indicators and 'MACD' in df_hist.columns:
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['MACD'], line=dict(color='#3b82f6', width=2), name='MACD'), secondary_y=True)
-            fig.add_trace(go.Scatter(x=df_hist.index, y=df_hist['MACD_Signal'], line=dict(color='#ef4444', width=2), name='Signal MACD'), secondary_y=True)
-            fig.add_trace(go.Bar(x=df_hist.index, y=df_hist['MACD_Diff'], name='Histogramme MACD', marker_color='#22c55e', opacity=0.5), secondary_y=True)
-
-        # Mise en forme globale
-        fig.update_layout(template="plotly_dark", xaxis_rangeslider_visible=False, height=600, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=10, b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
-        
-        # Cacher la grille de l'axe Y secondaire pour plus de clarté
-        fig.update_yaxes(showgrid=False, secondary_y=True)
+        fig = build_chart(
+            df_hist,
+            show_ma50=show_ma50,
+            show_ma200=show_ma200,
+            show_rsi="RSI" in selected_indicators,
+            show_macd="MACD" in selected_indicators,
+            show_bb="Bandes de Bollinger" in selected_indicators,
+            chart_type=chart_type,
+        )
         st.plotly_chart(fig, use_container_width=True)
-        
-        # Section Comparaison
+
         if compare_ticker:
-            df_compare = get_history(compare_ticker, days=p_map[sel_p])
-            if not df_compare.empty:
+            fig_comp = build_comparison_chart(ticker, compare_ticker, sel_p)
+            if fig_comp is not None:
                 st.divider()
                 st.subheader(f"🔄 Comparaison : {ticker} vs {compare_ticker} (Performance %)")
-                
-                # Normalisation Base 100
-                base_price_main = df_hist['Close'].iloc[0]
-                base_price_comp = df_compare['Close'].iloc[0]
-                
-                df_hist['Normalized'] = (df_hist['Close'] / base_price_main) * 100
-                df_compare['Normalized'] = (df_compare['Close'] / base_price_comp) * 100
-                
-                fig_comp = go.Figure()
-                fig_comp.add_trace(go.Scatter(x=df_hist.index, y=df_hist['Normalized'], name=ticker, line=dict(color='#fbbf24', width=2)))
-                fig_comp.add_trace(go.Scatter(x=df_compare.index, y=df_compare['Normalized'], name=compare_ticker, line=dict(color='#3b82f6', width=2)))
-                
-                # Mise en forme globale
-                fig_comp.update_layout(
-                    template="plotly_dark", 
-                    height=450, 
-                    paper_bgcolor='rgba(0,0,0,0)', 
-                    plot_bgcolor='rgba(0,0,0,0)', 
-                    margin=dict(l=0, r=0, t=30, b=0), 
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-                    yaxis_title="Performance (Base 100)"
-                )
-                
                 st.plotly_chart(fig_comp, use_container_width=True)
             else:
-                st.warning(f"Ticker de comparaison '{compare_ticker}' introuvable ou pas assez de données.")
-
+                st.warning(f"Unable to compare {ticker} with {compare_ticker} : pas assez de données communes.")
     else:
         st.warning(f"Ticker '{ticker}' introuvable.")
 
