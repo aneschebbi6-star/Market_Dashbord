@@ -381,11 +381,66 @@ def render_chart(ticker, compare_ticker, show_ma50, show_ma200, chart_type):
     else:
         st.warning(f"Ticker '{ticker}' introuvable.")
 
+def _format_change_label(change):
+    arrow = "▲" if change >= 0 else "▼"
+    return f"{arrow} {change:.2f}%"
+
+
+def _render_market_overview(data):
+    sorted_items = sorted(data.items(), key=lambda item: item[1].get('usd_24h_change', 0))
+    if not sorted_items:
+        return
+
+    top_loser = sorted_items[0]
+    top_gainer = sorted_items[-1]
+    avg_change = sum(item[1].get('usd_24h_change', 0) for item in sorted_items) / len(sorted_items)
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(
+            label="📉 Meilleure baisse",
+            value=top_loser[0].upper(),
+            delta=_format_change_label(top_loser[1].get('usd_24h_change', 0)),
+        )
+    with col2:
+        st.metric(
+            label="📈 Meilleure hausse",
+            value=top_gainer[0].upper(),
+            delta=_format_change_label(top_gainer[1].get('usd_24h_change', 0)),
+        )
+    with col3:
+        st.metric(
+            label="⚖️ Variation moyenne 24h",
+            value=_format_change_label(avg_change),
+            delta="",
+        )
+
+
 def render_footer_table(data):
-    """Render the data table expander."""
+    """Render the data table expander with enhanced market details."""
     with st.expander("🔍 Voir le Détail du Marché"):
-        table_data = [{"ACTIF": k.upper(), "VALEUR ($)": f"{v['usd']:,.2f}", "CHANGE 24H": f"{v['usd_24h_change']:.2f}%"} for k, v in data.items()]
-        st.table(pd.DataFrame(table_data))
+        st.write(
+            "**Aperçu du marché en un coup d'œil** : trouvez rapidement les actifs les plus dynamiques et suivez la performance globale.")
+        st.divider()
+        _render_market_overview(data)
+
+        st.markdown("### Tableau des actifs")
+        table_data = [
+            {
+                "ACTIF": k.upper(),
+                "VALEUR ($)": f"{v['usd']:,.2f}",
+                "CHANGE 24H": f"{v['usd_24h_change']:.2f}%",
+                "STATUT": "Hausse" if v['usd_24h_change'] >= 0 else "Baisse",
+            }
+            for k, v in data.items()
+        ]
+        df = pd.DataFrame(table_data)
+        df = df.sort_values(by="CHANGE 24H", ascending=False)
+        st.dataframe(df, use_container_width=True)
+
+        st.markdown(
+            "_Astuce : cliquez sur les en-têtes de colonnes pour trier les actifs par prix ou variation._"
+        )
 
 
 def render_sentiment_gauge(ticker):
