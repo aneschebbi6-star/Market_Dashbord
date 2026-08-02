@@ -2,6 +2,7 @@ import streamlit as st
 from styles.theme import inject_global_styles
 from views.sidebar import render_sidebar
 from views.dashboard import render_metrics, render_chart, render_footer_table, render_sentiment_gauge
+from views.portfolio import render_portfolio_page
 from cache_layer import cached_get_prices
 
 def setup_page():
@@ -12,6 +13,18 @@ def main():
     try:
         setup_page()
 
+        # View: Sidebar and navigation
+        sidebar_result = render_sidebar()
+        if isinstance(sidebar_result, tuple) and len(sidebar_result) == 6:
+            page, search_ticker, compare_ticker, show_ma50, show_ma200, chart_type = sidebar_result
+        else:
+            page = "Dashboard"
+            search_ticker, compare_ticker, show_ma50, show_ma200, chart_type = "BTC", "", True, False, "Candlestick"
+
+        if page == "Portefeuille":
+            render_portfolio_page()
+            return
+
         # Controller: Data Fetching
         top_symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "GC=F", "SI=F", "CL=F"]
         data = cached_get_prices(top_symbols)
@@ -21,8 +34,6 @@ def main():
             return
 
         # View: Rendering
-        search_ticker, compare_ticker, show_ma50, show_ma200, chart_type = render_sidebar()
-        
         st.title("🚀 Market Dashboard Pro")
         render_metrics(data)
         st.divider()

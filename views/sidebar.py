@@ -33,6 +33,29 @@ def render_sidebar():
         st.title("⚙️ Pilotage")
         st.divider()
 
+        page = st.radio(
+            "Page",
+            options=["Dashboard", "Portefeuille"],
+            index=0,
+            horizontal=True,
+            key="app_page",
+        )
+        st.divider()
+
+        if page == "Portefeuille":
+            st.markdown("**Gérez votre portefeuille et suivez vos positions en temps réel.**")
+            st.caption("Ajoutez des transactions ou affichez la performance globale de votre portefeuille.")
+            st.divider()
+
+            if st.button("🔄 Actualiser Flux", use_container_width=True):
+                st.rerun()
+            if st.button("🚪 Quitter la Session", use_container_width=True):
+                st.session_state["password_correct"] = False
+                st.rerun()
+
+            st.caption(f"Status : Connecté | {time.strftime('%H:%M:%S')}")
+            return page, "", "", True, False, "Candlestick"
+
         # ── Ticker principal ────────────────────────────────────────────
         st.subheader("🔍 Analyse Ticker")
 
@@ -100,4 +123,4 @@ def render_sidebar():
             st.session_state["password_correct"] = False
             st.rerun()
         st.caption(f"Status : Connecté | {time.strftime('%H:%M:%S')}")
-        return ticker, compare_ticker, ma50, ma200, chart_type
+        return page, ticker, compare_ticker, ma50, ma200, chart_type
