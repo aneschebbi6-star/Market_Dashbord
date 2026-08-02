@@ -2,7 +2,7 @@ import streamlit as st
 from styles.theme import inject_global_styles
 from views.sidebar import render_sidebar
 from views.dashboard import render_metrics, render_chart, render_footer_table, render_sentiment_gauge
-from fetcher import get_prices
+from cache_layer import cached_get_prices
 
 def setup_page():
     st.set_page_config(page_title="Market Dashboard Pro", layout="wide", initial_sidebar_state="collapsed")
@@ -14,7 +14,7 @@ def main():
 
         # Controller: Data Fetching
         top_symbols = ["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "GC=F", "SI=F", "CL=F"]
-        data = get_prices(top_symbols)
+        data = cached_get_prices(top_symbols)
         
         if not data:
             st.error("Erreur de flux de données.")

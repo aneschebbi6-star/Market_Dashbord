@@ -1,10 +1,17 @@
 import os
 import yfinance as yf
 import pandas as pd
-import ta
+try:
+    import ta
+except Exception:
+    ta = None
 import requests
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-import nltk
+try:
+    from nltk.sentiment.vader import SentimentIntensityAnalyzer
+    import nltk
+except Exception:
+    SentimentIntensityAnalyzer = None
+    nltk = None
 
 # Load environment variables
 try:
@@ -13,11 +20,15 @@ try:
 except ImportError:
     pass
 
-# Download VADER lexicon for sentiment analysis
-try:
-    nltk.data.find('sentiment/vader_lexicon')
-except LookupError:
-    nltk.download('vader_lexicon', quiet=True)
+if nltk is not None:
+    # Download VADER lexicon for sentiment analysis if missing
+    try:
+        nltk.data.find('sentiment/vader_lexicon')
+    except LookupError:
+        try:
+            nltk.download('vader_lexicon', quiet=True)
+        except Exception:
+            pass
 
 
 def get_prices(symbols=["BTC-USD", "ETH-USD", "SOL-USD", "BNB-USD", "XRP-USD", "ADA-USD", "DOGE-USD", "GC=F", "SI=F", "CL=F"]):
@@ -141,21 +152,31 @@ def get_history(ticker_or_name="bitcoin", period_label="1M"):
 
         hist = hist.dropna(how="all")
 
-        # Calculer les indicateurs techniques
-        if len(hist) >= 14:
-            hist['RSI'] = ta.momentum.RSIIndicator(hist['Close'], window=14).rsi()
-            
-            macd = ta.trend.MACD(hist['Close'])
-            hist['MACD'] = macd.macd()
-            hist['MACD_Signal'] = macd.macd_signal()
-            hist['MACD_Diff'] = macd.macd_diff()
-            hist['MACD_Hist'] = hist['MACD'] - hist['MACD_Signal']
+        # Calculer les indicateurs techniques si la librairie 'ta' est disponible
+        if ta is not None:
+            if len(hist) >= 14:
+                try:
+                    hist['RSI'] = ta.momentum.RSIIndicator(hist['Close'], window=14).rsi()
+                except Exception:
+                    pass
 
-        if len(hist) >= 20:
-            bb = ta.volatility.BollingerBands(hist['Close'], window=20, window_dev=2)
-            hist['BB_High'] = bb.bollinger_hband()
-            hist['BB_Low'] = bb.bollinger_lband()
-            hist['BB_Mid'] = bb.bollinger_mavg()
+                try:
+                    macd = ta.trend.MACD(hist['Close'])
+                    hist['MACD'] = macd.macd()
+                    hist['MACD_Signal'] = macd.macd_signal()
+                    hist['MACD_Diff'] = macd.macd_diff()
+                    hist['MACD_Hist'] = hist['MACD'] - hist['MACD_Signal']
+                except Exception:
+                    pass
+
+            if len(hist) >= 20:
+                try:
+                    bb = ta.volatility.BollingerBands(hist['Close'], window=20, window_dev=2)
+                    hist['BB_High'] = bb.bollinger_hband()
+                    hist['BB_Low'] = bb.bollinger_lband()
+                    hist['BB_Mid'] = bb.bollinger_mavg()
+                except Exception:
+                    pass
 
         # Compute moving averages in a timeframe-aware way.
         # For intraday intervals, a 'MA50' should represent 50 days, not 50 bars.
@@ -206,6 +227,37 @@ def get_history(ticker_or_name="bitcoin", period_label="1M"):
     except Exception as e:
         print(f"Erreur historique pour {ticker}: {e}")
         return pd.DataFrame()
+
+def get_news(query, limit=10):
+    """Fetch news articles for `query` using NewsAPI.org if configured.
+
+    Returns a list of article dicts with at least 'title' and 'url'.
+    If no API key or on error, returns an empty list.
+    """
+    api_key = os.environ.get('NEWSAPI_KEY')
+    if not api_key:
+        return []
+
+    url = 'https://newsapi.org/v2/everything'
+    params = {
+        'q': query,
+        'apiKey': api_key,
+        'pageSize': min(100, limit),
+        'language': 'en',
+        'sortBy': 'relevancy'
+    }
+    try:
+        resp = requests.get(url, params=params, timeout=6)
+        resp.raise_for_status()
+        data = resp.json()
+        articles = data.get('articles', [])[:limit]
+        # Normalize to minimal fields expected by UI
+        normalized = []
+        for a in articles:
+            normalized.append({'title': a.get('title', ''), 'url': a.get('url', ''), 'source': a.get('source', {}).get('name')})
+        return normalized
+    except Exception:
+        return []
 
 
 import re
@@ -292,10 +344,18 @@ def get_crypto_analyzer():
     """
     global _crypto_analyzer
     if _crypto_analyzer is None:
-        analyzer = SentimentIntensityAnalyzer()
-        analyzer.lexicon.update(CRYPTO_LEXICON)
-        analyzer.lexicon.update(PHRASE_LEXICON)
-        _crypto_analyzer = analyzer
+        if SentimentIntensityAnalyzer is None:
+            # Fallback lightweight analyzer that returns neutral scores when nltk isn't installed
+            class _FallbackAnalyzer:
+                def polarity_scores(self, _text):
+                    return {'neg': 0.0, 'neu': 1.0, 'pos': 0.0, 'compound': 0.0}
+
+            _crypto_analyzer = _FallbackAnalyzer()
+        else:
+            analyzer = SentimentIntensityAnalyzer()
+            analyzer.lexicon.update(CRYPTO_LEXICON)
+            analyzer.lexicon.update(PHRASE_LEXICON)
+            _crypto_analyzer = analyzer
     return _crypto_analyzer
 
 

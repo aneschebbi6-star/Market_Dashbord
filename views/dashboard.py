@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from fetcher import get_history, get_news, analyze_sentiment
+from cache_layer import cached_get_history, cached_get_news
+from fetcher import analyze_sentiment
 
 def render_metrics(data):
     """Render the top metric cards."""
@@ -256,8 +257,8 @@ def build_chart(
 
 
 def build_comparison_chart(main_ticker, compare_ticker, period_label):
-    hist_main = get_history(main_ticker, period_label)
-    hist_compare = get_history(compare_ticker, period_label)
+    hist_main = cached_get_history(main_ticker, period_label)
+    hist_compare = cached_get_history(compare_ticker, period_label)
 
     if hist_main.empty or hist_compare.empty:
         return None
@@ -353,7 +354,7 @@ def render_chart(ticker, compare_ticker, show_ma50, show_ma200, chart_type):
             default=[],
         )
 
-    df_hist = get_history(ticker, period_label=sel_p)
+    df_hist = cached_get_history(ticker, period_label=sel_p)
 
     if sel_p == "1J":
         st.info("⚠️ Mode intraday (5 min) — les bougies peuvent être incomplètes en dehors des heures de marché.")
@@ -368,7 +369,6 @@ def render_chart(ticker, compare_ticker, show_ma50, show_ma200, chart_type):
             show_bb="Bandes de Bollinger" in selected_indicators,
             chart_type=chart_type,
         )
-<<<<<<< HEAD
         # Display which interval was actually used (may differ for commodities)
         interval_used = df_hist.attrs.get('interval_used') if hasattr(df_hist, 'attrs') else None
         if interval_used:
@@ -384,8 +384,6 @@ def render_chart(ticker, compare_ticker, show_ma50, show_ma200, chart_type):
             for note in ma_notes:
                 st.info(note)
 
-=======
->>>>>>> 08cf2cfb7064ae84d57371fedd92e18d76146d95
         st.plotly_chart(fig, use_container_width=True)
 
         if compare_ticker:
@@ -443,7 +441,6 @@ def render_footer_table(data):
         _render_market_overview(data)
 
         st.markdown("### Tableau des actifs")
-<<<<<<< HEAD
         table_data = []
         for k, v in data.items():
             change = v.get('usd_24h_change', 0.0)
@@ -484,20 +481,6 @@ def render_footer_table(data):
             # st_aggrid not installed — simple fallback
             df = df.drop(columns=['CHANGE_FLOAT'])
             st.dataframe(df, use_container_width=True)
-=======
-        table_data = [
-            {
-                "ACTIF": k.upper(),
-                "VALEUR ($)": f"{v['usd']:,.2f}",
-                "CHANGE 24H": f"{v['usd_24h_change']:.2f}%",
-                "STATUT": "Hausse" if v['usd_24h_change'] >= 0 else "Baisse",
-            }
-            for k, v in data.items()
-        ]
-        df = pd.DataFrame(table_data)
-        df = df.sort_values(by="CHANGE 24H", ascending=False)
-        st.dataframe(df, use_container_width=True)
->>>>>>> 08cf2cfb7064ae84d57371fedd92e18d76146d95
 
         st.markdown(
             "_Astuce : cliquez sur les en-têtes de colonnes pour trier les actifs par prix ou variation._"
@@ -531,7 +514,8 @@ def render_sentiment_gauge(ticker):
         }
         
         crypto_name = crypto_mapping.get(ticker.upper(), ticker.lower())
-        news = get_news(crypto_name, limit=10)
+
+        news = cached_get_news(crypto_name, limit=10)
         
         if not news or len(news) == 0:
             st.info(f"⏳ Aucune actualité disponible pour {ticker} en ce moment.")
